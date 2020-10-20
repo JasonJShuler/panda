@@ -18,7 +18,7 @@ const int GM_DRIVER_TORQUE_FACTOR = 4;
 const int GM_MAX_GAS = 3072;
 const int GM_MAX_REGEN = 1404;
 const int GM_MAX_BRAKE = 350;
-const CanMsg GM_TX_MSGS[] = {{384, 0, 4}, {1033, 0, 7}, {1034, 0, 7}, {715, 0, 8}, {880, 0, 6}, {512, 0, 6}  // pt bus
+const CanMsg GM_TX_MSGS[] = {{384, 0, 4}, {1033, 0, 7}, {1034, 0, 7}, {715, 0, 8}, {880, 0, 6}, {512, 0, 6},  // pt bus
                              {161, 1, 7}, {774, 1, 8}, {776, 1, 7}, {784, 1, 2},   // obs bus
                              {789, 2, 5},  // ch bus
                              {0x104c006c, 3, 3}, {0x10400060, 3, 5}};  // gmlan
@@ -52,14 +52,14 @@ static bool gm_handle_relay(CAN_FIFOMailBox_TypeDef *to_push) {
     if (GET_BUS(to_push) != 0) return false;
     int addr = GET_ADDR(to_push);
     if (addr != 384) return false;
-    gm_rc_lkas = GET_BYTE(to_send, 0) >> 4;
+    gm_rc_lkas = GET_BYTE(to_push, 0) >> 4;
     set_intercept_relay(true);
     //TODO: this assumes relay change is near-instant. If it lags, some values could sneak through...
     heartbeat_counter = 0U;
     return true;
   }
   //TODO: Open -> Closed
-
+  return true;
 
 }
 
@@ -174,7 +174,7 @@ static int gm_tx_hook(CAN_FIFOMailBox_TypeDef *to_send) {
 
   // LKA STEER: safety check
   if (addr == 384) {
-    int rolling_counter = GET_BYTE(to_send, 0) >> 4;
+    uint32_t rolling_counter = (uint32_t)GET_BYTE(to_send, 0) >> 4;
     int desired_torque = ((GET_BYTE(to_send, 0) & 0x7U) << 8) + GET_BYTE(to_send, 1);
     uint32_t ts = TIM2->CNT;
     bool violation = 0;
@@ -278,6 +278,7 @@ static int gm_fwd_hook(int bus_num, CAN_FIFOMailBox_TypeDef *to_fwd) {
 }
 
 static void gm_init_hook(int16_t param) {
+  UNUSED(param);
   if (board_has_relay()) {
     gm_camera_bus = 2;
   }
