@@ -183,7 +183,13 @@ static int gm_tx_hook(CAN_FIFOMailBox_TypeDef *to_send) {
     // This esures that if a message is skipped, we wait until it comes back around to the correct value
     // LKAS messages must always have a rolling counter in-order with no gaps.
     // This will drop up to 3 messages - up to 60ms lag. Totally acceptable.
-    if (rolling_counter != (gm_rc_lkas + 1) % 4) violation = true;
+    
+    if (gm_rc_lkas != 5) {
+      if (rolling_counter != (gm_rc_lkas + 1) % 4) violation = true;
+    }
+    else {
+      gm_rc_lkas = rolling_counter;
+    }
 
     if (current_controls_allowed) {
 
@@ -210,7 +216,7 @@ static int gm_tx_hook(CAN_FIFOMailBox_TypeDef *to_send) {
       //TODO: may require tuning. TODO: hopefully the timing can be caught here. If not, the lag is downstream TODO: debug output
       //We need to drop lkas frame when comes in too fast.
       // (we will then skip up to 4 frames)
-      if (ts_elapsed < 20000) violation = true;
+      if (ts_elapsed < 19000) violation = true;
     }
 
     // no torque if controls is not allowed
